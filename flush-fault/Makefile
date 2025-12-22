@@ -1,10 +1,10 @@
 all: flush-fault flush-ret
 
 flush-fault: flush-fault.c
-	gcc flush-fault.c -o flush-fault
+	/bin/x86_64-linux-gnu-gcc-13 flush-fault.c -o flush-fault
 
 flush-ret: flush-ret.c
-	gcc flush-ret.c -o flush-ret
+	/bin/x86_64-linux-gnu-gcc-13 flush-ret.c -o flush-ret
 
 
 clean:
