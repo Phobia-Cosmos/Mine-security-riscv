@@ -1,8 +1,16 @@
-all: main 
+CC      = /opt/riscv/bin/riscv64-unknown-linux-gnu-gcc
+QEMU    = qemu-riscv64
+CFLAGS  = -static -Os
 
-main: main.c 
-	gcc main.c asm.S -Os -o main
-	
+TARGET  = main
+
+all: $(TARGET)
+
+$(TARGET): main.c asm.S
+	$(CC) $(CFLAGS) $^ -o $@
+
+run: $(TARGET)
+	$(QEMU) ./$<
+
 clean:
-	rm -f main 
-	
+	rm -f $(TARGET)

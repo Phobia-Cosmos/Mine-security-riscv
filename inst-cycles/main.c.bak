@@ -1,0 +1,147 @@
+#include <stdint.h>
+
+/* ================= 配置 ================= */
+
+#define CT_REP 10
+
+#define REP16(x) x x x x x x x x x x x x x x x x
+#define REP256(x) \
+    REP16(x)      \
+    REP16(x)      \
+    REP16(x)      \
+    REP16(x)      \
+    REP16(x)      \
+    REP16(x)      \
+    REP16(x)      \
+    REP16(x)      \
+    REP16(x)      \
+    REP16(x)      \
+    REP16(x)      \
+    REP16(x)      \
+    REP16(x)      \
+    REP16(x)      \
+    REP16(x)      \
+    REP16(x)
+
+#define REP1K(x) REP256(x) REP256(x) REP256(x) REP256(x)
+
+#define MERGE_(a, b) a##b
+
+/* ================= rdcycle ================= */
+
+static inline uint64_t rdcycle(void)
+{
+    uint64_t v;
+    asm volatile("rdcycle %0" : "=r"(v));
+    return v;
+}
+
+/* ================= PRNG（无 syscall） ================= */
+
+static volatile uint64_t prng_state = 0x123456789abcdef0ULL;
+
+static inline uint64_t prng_next(void)
+{
+    uint64_t x = prng_state;
+    x ^= x << 13;
+    x ^= x >> 7;
+    x ^= x << 17;
+    prng_state = x;
+    return x;
+}
+
+/* ================= Benchmark 框架 ================= */
+
+typedef uint64_t (*measure_func_t)(void);
+
+typedef struct
+{
+    measure_func_t fnc;
+    const char *name;
+    int cycles;
+    int ct;
+} function_info_t;
+
+function_info_t functions[128];
+int function_count = 0;
+
+uint64_t overhead = 0;
+
+/* ================= MEASURE / BASE ================= */
+
+#define MEASURE(instr, init, code, flags)                            \
+    uint64_t MERGE_(measure_, instr)(void)                           \
+    {                                                                \
+        uint64_t start = rdcycle();                                  \
+        asm volatile(init "; fence; " REP1K(code) "; fence;" flags); \
+        return rdcycle() - start;                                    \
+    }                                                                \
+    void __attribute__((constructor)) MERGE_(ctor_, instr)(void)     \
+    {                                                                \
+        functions[function_count].fnc = MERGE_(measure_, instr);     \
+        functions[function_count].name = #instr;                     \
+        functions[function_count].cycles = -1;                       \
+        functions[function_count].ct = 1;                            \
+        function_count++;                                            \
+    }
+
+#define BASE(fnc)                                     \
+    void __attribute__((constructor)) base_ctor(void) \
+    {                                                 \
+        MERGE_(measure_, fnc)();                      \
+        overhead = MERGE_(measure_, fnc)();           \
+    }
+
+/* ================= 被测指令 ================= */
+
+MEASURE(base, "", "", "")
+MEASURE(nop, "", "nop;", "")
+MEASURE(mv, "", "mv a0, a1;", :: : "a0")
+MEASURE(add, "", "add a0, a1, a2;", :: : "a0")
+MEASURE(add_s, "", "add a1, a1, a1;", :: : "a1")
+
+BASE(base)
+
+/* ================= 结果（内存中） ================= */
+
+volatile uint64_t result_cycles[128];
+volatile uint64_t result_ct[128];
+
+/* ================= main（零 syscall） ================= */
+
+int main(void)
+{
+    for (int rep = 0; rep < CT_REP; rep++)
+    {
+        for (int i = 0; i < function_count; i++)
+        {
+            /* warmup */
+            functions[i].fnc();
+
+            /* 寄存器扰动（无 syscall） */
+            uint64_t r1 = prng_next();
+            uint64_t r2 = prng_next();
+            asm volatile("mv a1, %0" : : "r"(r1));
+            asm volatile("mv a2, %0" : : "r"(r2));
+
+            uint64_t c =
+                ((functions[i].fnc() - overhead) + 1023) / 1024;
+
+            if (functions[i].cycles != -1 &&
+                functions[i].cycles != (int)c)
+            {
+                functions[i].ct = 0;
+            }
+            functions[i].cycles = (int)c;
+        }
+    }
+
+    /* 保存结果到内存 */
+    for (int i = 0; i < function_count; i++)
+    {
+        result_cycles[i] = functions[i].cycles;
+        result_ct[i] = functions[i].ct;
+    }
+
+    return 0;
+}

@@ -1,8 +1,16 @@
-all: hist
+CC      = /opt/riscv/bin/riscv64-unknown-linux-gnu-gcc
+QEMU    = qemu-riscv64
+CFLAGS  = -static -Os
 
-hist: hist.c
-	gcc hist.c -DC906 -Os -o hist
-	
+TARGET  = hist
+
+all: $(TARGET)
+
+$(TARGET): hist.c
+	$(CC) $(CFLAGS) -DC906 $^ -o $@
+
+run: $(TARGET)
+	$(QEMU) ./$<
+
 clean:
-	rm -f hist
-
+	rm -f $(TARGET)

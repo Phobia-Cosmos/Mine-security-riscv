@@ -1,11 +1,23 @@
+CC      = /opt/riscv/bin/riscv64-unknown-linux-gnu-gcc
+QEMU    = qemu-riscv64
+CFLAGS  = -static -Os
+
 all: main timer-resolution
 
 main: main.c
-	gcc main.c -Os -o main
+	$(CC) $(CFLAGS) $^ -o $@
 
 timer-resolution: timer-resolution.c
-	gcc timer-resolution.c -Os -o timer-resolution
+	$(CC) $(CFLAGS) $^ -o $@
+
+run-main: main
+	$(QEMU) ./$<
+
+run-timer: timer-resolution
+	$(QEMU) ./$<
+
+run: main
+	$(QEMU) ./$<
 
 clean:
 	rm -f main timer-resolution
-

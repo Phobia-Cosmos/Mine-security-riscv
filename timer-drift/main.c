@@ -26,7 +26,8 @@ uint64_t lret = 0, lt = 0, lc = 0, cret = 0, ct = 0, cc = 0;
 size_t sw[SW_L];
 int swp = 0;
 
-void sigalarm(int num) {
+void sigalarm(int num)
+{
   cc = rdcycle();
   ct = rdtime();
   cret = rdinstret();
@@ -38,7 +39,8 @@ void sigalarm(int num) {
   sw[swp] = cret - lret;
   swp = (swp + 1) % SW_L;
   ssize_t avg = 0;
-  for (int i = 0; i < SW_L; i++) {
+  for (int i = 0; i < SW_L; i++)
+  {
     avg += sw[i];
   }
   avg /= SW_L;
@@ -50,11 +52,13 @@ void sigalarm(int num) {
   lc = cc;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
   signal(SIGALRM, sigalarm);
   setitimer(ITIMER_REAL, &timer, NULL);
 
-  while (1) {
+  while (1)
+  {
     sched_yield();
   }
   /*

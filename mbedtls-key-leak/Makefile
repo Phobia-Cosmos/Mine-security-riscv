@@ -1,47 +1,49 @@
+GCC = /opt/riscv/bin/riscv64-unknown-linux-gnu-gcc
+
 CPU_NO_ATTACKER=0
 CPU_NO_VICTIM=1
 
 all: encrypt decrypt exploit exploit2 exploit-fr-parallel exploit-fr-sequential
 
 encrypt: encrypt.c
-	gcc -Lmbedtls/library -Imbedtls/include encrypt.c -ggdb3 -Wall -o encrypt -lmbedtls
+	$(GCC) -Lmbedtls/library -I ./mbedtls/include encrypt.c -ggdb3 -Wall -static -o encrypt -lmbedtls
 
 decrypt: decrypt.c
-	gcc -Lmbedtls/library -Imbedtls/include decrypt.c -ggdb3 -Wall -o decrypt -lmbedtls
+	$(GCC) -Lmbedtls/library -I ./mbedtls/include decrypt.c -ggdb3 -Wall -static -o decrypt -lmbedtls
 
 decrypt-simulator: decrypt-simulator.c
-	gcc -Lbp-simulator/library -Ibp-simulator/include decrypt-simulator.c -ggdb3 -Wall -o decrypt-simulator -lmbedtls
+	$(GCC) -Lbp-simulator/library -Ibp-simulator/include decrypt-simulator.c -ggdb3 -Wall -static -o decrypt-simulator -lmbedtls
 
 exploit: exploit.c simulator.c
-	gcc -Lmbedtls/library -Imbedtls/include simulator.c exploit.c -ggdb3 -Wall -Os -o exploit -lmbedtls
+	$(GCC) -Lmbedtls/library -Imbedtls/include simulator.c exploit.c -ggdb3 -Wall -Os -static -o exploit -lmbedtls
 
 exploit2: exploit2.c
-	gcc -Lmbedtls/library -Imbedtls/include exploit2.c -ggdb3 -Wall -Os -o exploit2 -lmbedtls
+	$(GCC) -Lmbedtls/library -Imbedtls/include exploit2.c -ggdb3 -Wall -Os -static -o exploit2 -lmbedtls
 
 exploit-fr-parallel: exploit_flush_reload_parallel.c
-	gcc -Lmbedtls/library -Imbedtls/include exploit_flush_reload_parallel.c -ggdb3 -Wall -Os -o exploit-flush-reload-parallel -lmbedtls
+	$(GCC) -Lmbedtls/library -Imbedtls/include exploit_flush_reload_parallel.c -ggdb3 -Wall -Os -static -o exploit-flush-reload-parallel -lmbedtls
 
 exploit-fr-sequential: exploit_flush_reload_sequential.c
-	gcc -Lmbedtls/library -Imbedtls/include exploit_flush_reload_sequential.c -ggdb3 -Wall -Os -o exploit-flush-reload-sequential -lmbedtls
+	$(GCC) -Lmbedtls/library -Imbedtls/include exploit_flush_reload_sequential.c -ggdb3 -Wall -Os -static -o exploit-flush-reload-sequential -lmbedtls
 
 run_encrypt: encrypt
-	LD_LIBRARY_PATH=./mbedtls/library taskset -c ${CPU_NO_VICTIM} ./encrypt
+	LD_LIBRARY_PATH=./mbedtls/library taskset -c $(CPU_NO_VICTIM) ./encrypt
 
 run_decrypt: decrypt
-	LD_LIBRARY_PATH=./mbedtls/library taskset -c ${CPU_NO_VICTIM} ./decrypt
+	LD_LIBRARY_PATH=./mbedtls/library taskset -c $(CPU_NO_VICTIM) ./decrypt
 
 run_exploit2: exploit2
-	LD_LIBRARY_PATH=./mbedtls/library taskset -c ${CPU_NO_ATTACKER} ./exploit2
+	LD_LIBRARY_PATH=./mbedtls/library taskset -c $(CPU_NO_ATTACKER) ./exploit2
 
 run_exploit: exploit
-	LD_LIBRARY_PATH=./mbedtls/library taskset -c ${CPU_NO_ATTACKER} ./exploit
+	LD_LIBRARY_PATH=./mbedtls/library taskset -c $(CPU_NO_ATTACKER) ./exploit
 
 run_exploit_fr_par: exploit-fr-parallel
-	#LD_LIBRARY_PATH=./mbedtls/library taskset -c ${CPU_NO_ATTACKER} ./exploit-flush-reload-parallel
+	#LD_LIBRARY_PATH=./mbedtls/library taskset -c $(CPU_NO_ATTACKER) ./exploit-flush-reload-parallel
 	LD_LIBRARY_PATH=./mbedtls/library ./exploit-flush-reload-parallel
 
-run_exploit_fr_seq: exploit-fr-seqential
-	#LD_LIBRARY_PATH=./mbedtls/library taskset -c ${CPU_NO_ATTACKER} ./exploit-flush-reload-parallel
+run_exploit_fr_seq: exploit-fr-sequential
+	#LD_LIBRARY_PATH=./mbedtls/library taskset -c $(CPU_NO_ATTACKER) ./exploit-flush-reload-parallel
 	LD_LIBRARY_PATH=./mbedtls/library ./exploit-flush-reload-sequential
 
 clean:
