@@ -4,21 +4,37 @@
 #include <string.h>
 #include <unistd.h>
 
+// 超过 200 cycle 的直接丢弃（不关心 tail）
 #define HISTOGRAM_ENTRIES 200
 #define HISTOGRAM_SCALE 1
 #define MEASUREMENTS 1000
 
 #define LOGFILE "histogram.csv"
 
+<<<<<<< HEAD
+=======
+// 没有函数序言 / 尾声
+// 没有：
+//   addi sp, sp, -xx
+//   sd ra, ...
+//   ld ra, ...
+// TODO：一个ret占一个Byte？
+>>>>>>> 45d35b0fb90fd08f29abf4736ef5add032dc08e3
 void __attribute__((aligned(4096), naked)) victim()
 {
   REP4K(asm volatile("ret");)
 }
 
+// TODO: typedef function pointer？这是什么语法？
+// victim_t 表示：void f(void);
 typedef void (*victim_t)(void);
 
 size_t measure_access_time(void *address)
 {
+<<<<<<< HEAD
+=======
+  // 地址强转为函数指针
+>>>>>>> 45d35b0fb90fd08f29abf4736ef5add032dc08e3
   victim_t v = (victim_t)address;
   uint64_t x = rdcycle();
   v();
@@ -42,6 +58,10 @@ void measure_misses(void *address, size_t *histogram,
 {
   for (size_t i = 0; i < number_of_measurements; i++)
   {
+<<<<<<< HEAD
+=======
+    // fencei(address);
+>>>>>>> 45d35b0fb90fd08f29abf4736ef5add032dc08e3
     fencei();
     size_t miss = measure_access_time(address);
     if (miss < HISTOGRAM_ENTRIES)
