@@ -21,6 +21,7 @@ int main() {
   size_t best_top_at = (size_t)-1;
   struct timespec stamp;
 
+  // TODO：这里是在做什么？
   do {
     size_t hist[div];
     memset(hist, 0, sizeof(hist));

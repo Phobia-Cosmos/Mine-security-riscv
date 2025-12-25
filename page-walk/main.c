@@ -8,6 +8,7 @@
 #define REP10(x) REP5(x) REP5(x)
 
 char __attribute__((aligned(4096))) buffer[4096 * 32];
+// TODO：对于不同层级的page-walk未做区分
 static inline void evict(void *addr) {
   int i = 1;
   REP10(maccess(buffer + i++ * 4096);)

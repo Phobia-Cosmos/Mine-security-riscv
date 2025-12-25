@@ -10,8 +10,16 @@
 
 #define LOGFILE "histogram.csv"
 
+// eviction pool 足够大；不会意外复用同一 VPN
 char __attribute__((aligned(4096))) buffer[4096 * 32];
 
+// TODO：为什么重复10次就可以清除TLB了？
+// 这是经验性 TLB eviction，不是 flush。TLB 是有限容量 + 组相联
+// | 层级      | 容量               | 结构        |
+// | ------- | ---------------- | --------- |
+// | L1 DTLB | 32–64 entries    | 4–8 way   |
+// | L2 STLB | 256–1536 entries | set-assoc |
+// TLB 按 VPN → set 映射
 static inline void evict_tlb(void *addr) {
   int i = 1;
   REP10(maccess(buffer + i++ * 4096);)

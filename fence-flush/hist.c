@@ -11,30 +11,31 @@
 
 #define LOGFILE "histogram.csv"
 
-<<<<<<< HEAD
-=======
 // 没有函数序言 / 尾声
 // 没有：
 //   addi sp, sp, -xx
 //   sd ra, ...
 //   ld ra, ...
-// TODO：一个ret占一个Byte？
->>>>>>> 45d35b0fb90fd08f29abf4736ef5add032dc08e3
+// 一个ret占一个Byte？为什么要这么多的ret？
+// ret（RISC-V 为 jalr x0, x1, 0）不是 1 字节，是 4 字节定长指令
+// 生成一定规模的代码 footprint，用来填满 I-cache
+// 每条 ret 会被 CPU 取指、预测返回、执行
+// 代码区域占用对齐后的 4KB，使其精准映射一个 I-cache 页。
 void __attribute__((aligned(4096), naked)) victim()
 {
   REP4K(asm volatile("ret");)
 }
 
-// TODO: typedef function pointer？这是什么语法？
+// typedef function pointer？这是什么语法？
 // victim_t 表示：void f(void);
+// 一个无参无返回的函数指针类型
 typedef void (*victim_t)(void);
 
+// TODO：为什么这里的测量又是要执行v这个函数才可以测量？
+// 因为你测的是 指令访问时间（I-Cache） 或 BTB/RSB 预测时间，而不是数据访问。
 size_t measure_access_time(void *address)
 {
-<<<<<<< HEAD
-=======
   // 地址强转为函数指针
->>>>>>> 45d35b0fb90fd08f29abf4736ef5add032dc08e3
   victim_t v = (victim_t)address;
   uint64_t x = rdcycle();
   v();
@@ -58,10 +59,7 @@ void measure_misses(void *address, size_t *histogram,
 {
   for (size_t i = 0; i < number_of_measurements; i++)
   {
-<<<<<<< HEAD
-=======
     // fencei(address);
->>>>>>> 45d35b0fb90fd08f29abf4736ef5add032dc08e3
     fencei();
     size_t miss = measure_access_time(address);
     if (miss < HISTOGRAM_ENTRIES)
